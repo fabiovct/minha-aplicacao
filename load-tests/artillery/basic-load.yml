@@ -1,0 +1,23 @@
+config:
+  target: 'http://localhost:8000'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 20
+      name: "Sustained load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer SEU_TOKEN_AQUI" # Substitua pelo token real
+
+scenarios:
+  - name: "Listar produtos"
+    flow:
+      - get:
+          url: "/api/list"
+          capture:
+            - json: "$.length"
+              as: "productCount"
+      - think: 1

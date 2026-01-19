@@ -1,0 +1,35 @@
+version: '3.8'
+
+# Docker Compose para executar testes de carga
+# Uso: docker-compose -f docker-compose.load-test.yml up
+
+services:
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-load-test
+    volumes:
+      - ./k6:/scripts
+      - ./results:/results
+    environment:
+      - BASE_URL=http://host.docker.internal:8000
+      - TOKEN=${TOKEN}
+    command: run /scripts/full-load.js
+    networks:
+      - load-test
+
+  artillery:
+    image: artilleryio/artillery:latest
+    container_name: artillery-load-test
+    volumes:
+      - ./artillery:/scripts
+      - ./results:/results
+    environment:
+      - TARGET_URL=http://host.docker.internal:8000
+      - TOKEN=${TOKEN}
+    command: run /scripts/full-load.yml --output /results/artillery-report.json
+    networks:
+      - load-test
+
+networks:
+  load-test:
+    driver: bridge

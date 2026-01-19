@@ -1,0 +1,61 @@
+config:
+  target: 'http://localhost:8000'
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 20
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 50
+      name: "Spike test"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer SEU_TOKEN_AQUI" # Substitua pelo token real
+  processor: "./processor.js"
+
+scenarios:
+  - name: "Fluxo completo CRUD"
+    weight: 70
+    flow:
+      # Listar produtos
+      - get:
+          url: "/api/list"
+          capture:
+            - json: "$[0].id"
+              as: "productId"
+      - think: 1
+
+      # Criar produto
+      - post:
+          url: "/api/list"
+          json:
+            name: "Produto Teste {{ $randomString() }}"
+            description: "Descrição do produto de teste"
+            qtd: "{{ $randomInt(1, 100) }}"
+          capture:
+            - json: "$.data.id"
+              as: "newProductId"
+      - think: 2
+
+      # Atualizar produto criado
+      - put:
+          url: "/api/list/{{ newProductId }}"
+          json:
+            name: "Produto Atualizado {{ $randomString() }}"
+            qtd: "{{ $randomInt(1, 100) }}"
+      - think: 1
+
+      # Deletar produto criado
+      - delete:
+          url: "/api/list/{{ newProductId }}"
+      - think: 1
+
+  - name: "Apenas leitura"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/list"
+      - think: 1

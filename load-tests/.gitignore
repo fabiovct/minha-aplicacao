@@ -1,0 +1,13 @@
+# Resultados de testes
+results/
+*.json
+*.html
+*.log
+
+# Tokens e credenciais
+.env.local
+*.token
+
+# Arquivos temporários
+*.tmp
+*.bak
