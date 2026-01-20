@@ -10,4 +10,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('list')
     ->group(base_path('routes/lista/list.routes.php'));
+
+    Route::prefix('product')
+    ->group(base_path('routes/product/product.routes.php'));
 });
