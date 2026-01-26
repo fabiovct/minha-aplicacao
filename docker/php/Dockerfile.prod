@@ -1,0 +1,45 @@
+FROM php:8.3-fpm
+
+# 1. Instalação de dependências
+RUN apt-get update && apt-get install -y \
+    zip \
+    unzip \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl \
+    # Limpeza de cache do apt para reduzir o tamanho da imagem
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 2. Composer (Copiando o binário oficial)
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 3. Definição do diretório
+WORKDIR /var/www
+
+# 4. COPIA DO CÓDIGO (Em prod, o código vive dentro da imagem)
+# Primeiro copiamos apenas os arquivos do composer para aproveitar o cache de camadas do Docker
+COPY composer.json composer.lock ./
+
+# Instala as dependências SEM as de desenvolvimento e otimizando o autoload
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+
+# Agora copiamos o restante do código
+COPY . .
+
+# Finaliza a otimização do Composer
+RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
+
+# 5. PERMISSÕES (Crucial para o Laravel/PHP-FPM)
+# O PHP-FPM roda como o usuário 'www-data'. Precisamos que ele seja dono das pastas de escrita.
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+# 6. SEGURANÇA (Opcional, mas recomendado)
+# Muda o usuário atual para www-data para não rodar o container como root
+USER www-data
+
+EXPOSE 9000
+CMD ["php-fpm"]
