@@ -1,0 +1,224 @@
+--- START OF FILE: app/Http/Controllers/Api/AuthController.php ---
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+class AuthController extends Controller
+{
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Credenciais inválidas'
+            ], 401);
+        }
+
+        // Remove tokens antigos (opcional)
+        $user->tokens()->delete();
+
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user' => $user
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Logout realizado com sucesso'
+        ]);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
+    }
+}
+
+--- END OF FILE ---
+
+--- START OF FILE: app/Http/Controllers/Controller.php ---
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+
+--- END OF FILE ---
+
+--- START OF FILE: app/Http/Controllers/List/ListController.php ---
+<?php
+
+namespace App\Http\Controllers\List;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Produto;
+use Illuminate\Http\JsonResponse;
+
+class ListController extends Controller
+{
+
+    public function list(): JsonResponse
+    {
+        $produtos = Produto::all();
+        return response()->json($produtos);
+    }
+
+    public function create(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'qtd' => 'required|integer|min:0',
+        ]);
+
+        $produto = Produto::create($validated);
+
+        return response()->json([
+            'message' => 'Produto criado com sucesso',
+            'data' => $produto
+        ], 201);
+    }
+
+    public function edit(Request $request, $id): JsonResponse
+    {
+        $produto = Produto::find($id);
+
+        if (!$produto) {
+            return response()->json([
+                'message' => 'Produto não encontrado'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'qtd' => 'sometimes|integer|min:0',
+        ]);
+
+        $produto->update($validated);
+
+        return response()->json([
+            'message' => 'Produto atualizado com sucesso',
+            'data' => $produto
+        ]);
+    }
+
+    public function delete($id): JsonResponse
+    {
+        $produto = Produto::find($id);
+
+        if (!$produto) {
+            return response()->json([
+                'message' => 'Produto não encontrado'
+            ], 404);
+        }
+
+        $produto->delete();
+
+        return response()->json([
+            'message' => 'Produto deletado com sucesso'
+        ]);
+    }
+
+}
+--- END OF FILE ---
+
+--- START OF FILE: app/Http/Controllers/Product/ProductController.php ---
+<?php
+
+namespace App\Http\Controllers\Product;
+
+use App\Http\Controllers\Controller;
+use App\Services\ProductService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class ProductController extends Controller
+{
+    public function __construct(
+        private ProductService $service
+    ) {}
+
+    public function list(): JsonResponse
+    {
+        return response()->json(
+            $this->service->listar()
+        );
+    }
+
+    public function create(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'qtd' => 'required|integer|min:0',
+        ]);
+
+        $produto = $this->service->criar($validated);
+
+        return response()->json([
+            'message' => 'Produto criado com sucesso',
+            'data' => $produto
+        ], 201);
+    }
+
+    public function edit(Request $request, $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'qtd' => 'sometimes|integer|min:0',
+        ]);
+
+        $produto = $this->service->atualizar($id, $validated);
+
+        if (!$produto) {
+            return response()->json([
+                'message' => 'Produto não encontrado'
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Produto atualizado com sucesso',
+            'data' => $produto
+        ]);
+    }
+
+    public function delete($id): JsonResponse
+    {
+        if (!$this->service->deletar($id)) {
+            return response()->json([
+                'message' => 'Produto não encontrado'
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Produto deletado com sucesso'
+        ]);
+    }
+}
+
+--- END OF FILE ---
+

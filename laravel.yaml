@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meu-laravel
+  template:
+    metadata:
+      labels:
+        app: meu-laravel
+    spec:
+      containers:
+      - name: laravel
+        image: meu-laravel:v1
+        env:
+        - name: DB_HOST
+          value: "mysql-service"  # O nome exato que está no metadata.name do seu Service de MySQL
+        - name: DB_DATABASE
+          value: "laravelk"
+        - name: DB_USERNAME
+          value: "root"
+        - name: DB_PASSWORD
+          value: "laravelk"
+        workingDir: /var/www
+        imagePullPolicy: Never # IMPORTANTE: Isso obriga o K8s a usar a imagem que você carregou via Kind
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel-service
+spec:
+  selector:
+    app: meu-laravel
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
