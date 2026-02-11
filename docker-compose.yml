@@ -8,8 +8,29 @@ services:
     working_dir: /var/www
     depends_on:
       - mysql
+      - redis
     networks:
       - laravel
+
+      # O NOVO SERVIÇO REDIS
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - '6379:6379'
+    networks:
+      - laravel
+    volumes:
+      - redis_data:/data
+
+  # O PAINEL VISUAL
+  redis-insight:
+    image: 'redislabs/redisinsight:latest'
+    ports:
+      - '8001:8001'
+    networks:
+      - laravel
+    depends_on:
+      - redis
 
   nginx:
     image: nginx:alpine
@@ -39,8 +60,21 @@ services:
     networks:
       - laravel
 
+# networks:
+#   laravel:
+
+# volumes:
+#   mysql_data:
+
+# CONFIGURAÇÕES GLOBAIS (Onde o erro estava acontecendo)
 networks:
   laravel:
+    driver: bridge
 
 volumes:
   mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+  

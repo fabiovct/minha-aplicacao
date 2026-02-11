@@ -36,14 +36,31 @@ class AuthController extends Controller
         ]);
     }
 
-    public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
+    // public function logout(Request $request)
+    // {
+    //     $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'message' => 'Logout realizado com sucesso'
-        ]);
+    //     return response()->json([
+    //         'message' => 'Logout realizado com sucesso'
+    //     ]);
+    // }
+
+    // No seu api.php ou AuthController.php
+public function logout(Request $request)
+{
+    // 1. Revoga o token se for via Token
+    if ($request->user()) {
+        $request->user()->currentAccessToken()->delete();
     }
+
+    // 2. Se estiver usando Sessão/Cookies (Sanctum SPA)
+    // Auth::guard('web')->logout(); 
+    // $request->session()->invalidate();
+    // $request->session()->regenerateToken();
+
+    return response(['message' => 'Deslogado com sucesso'])
+            ->withoutCookie('token'); // Garanta que o path '/' coincida
+}
 
     public function me(Request $request)
     {
