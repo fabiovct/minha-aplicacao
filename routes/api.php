@@ -13,4 +13,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('product')
     ->group(base_path('routes/product/product.routes.php'));
+
+    Route::prefix('dashboard')
+    ->group(base_path('routes/dashboard/dashboard.routes.php'));
 });
